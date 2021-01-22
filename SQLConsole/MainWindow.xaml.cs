@@ -69,7 +69,7 @@ namespace SQLConsole
         {
             while (reader.Read())
             {
-               var datatbasename = reader.GetString("database"));
+               var datatbasename = reader.GetString("database");
                 tvDatabases.Items.Add(
                     new DatabaseItem()
                     {
