@@ -27,14 +27,21 @@ namespace SQLConsole
         {
             InitializeComponent();
             _databases = new List<string>();
-           // rtSqlEditor.IsReadOnly = true;
             btnRun.IsEnabled = false;
             tbHostname.Text = "localhost";
             tbPort.Text = "3306";
             tbUsername.Text = "root";
         }
 
-        private void BtnConnect_OnClick(object sender, RoutedEventArgs e)
+        #region ClickHandling
+
+        private void SetClickHandler()
+        {
+            btnRun.Click += OnRunClick;
+            btnConnect.Click += OnConnectClick;
+        }
+
+        private void OnConnectClick(object sender, RoutedEventArgs e)
         {
             hostname = tbHostname.Text;
             port = tbPort.Text;
@@ -49,6 +56,35 @@ namespace SQLConsole
                 ReadDatabases(query);
             }
         }
+
+        private void OnRunClick(object sender, RoutedEventArgs e)
+        {
+            try
+            {
+                using (var query = new Query())
+                {
+                    DatabaseItem db = (DatabaseItem)tvDatabases.SelectedItem;
+                    if (db == null)
+                    {
+                        WriteLog("Please select a database!");
+                        return;
+                    }
+                    query.Connect(_connectionstring + $"Database={db.DatabaseName}");
+                    query.Add(new TextRange(rtSqlEditor.Document.ContentStart, rtSqlEditor.Document.ContentEnd).Text);
+                    var reader = query.Open();
+                    RenderDataTable(reader);
+                }
+            }
+            catch (MySqlException exception)
+            {
+                WriteLog(exception.ToString());
+            }
+
+        }
+
+        #endregion
+
+
 
         private void ReadDatabases(Query query)
         {
@@ -82,31 +118,6 @@ namespace SQLConsole
 
                 }
             }
-        }
-
-        private void BtnRunQuery_Click(object sender, RoutedEventArgs e)
-        {
-            try
-            {
-                using (var query = new Query())
-                {
-                    DatabaseItem db = (DatabaseItem)tvDatabases.SelectedItem;
-                    if (db == null)
-                    {
-                        WriteLog("Please select a database!");
-                        return;
-                    }
-                    query.Connect(_connectionstring + $"Database={db.DatabaseName}");
-                    query.Add(new TextRange(rtSqlEditor.Document.ContentStart, rtSqlEditor.Document.ContentEnd).Text);
-                    var reader = query.Open();
-                    RenderDataTable(reader);
-                }
-            }
-            catch (MySqlException exception)
-            {
-                WriteLog(exception.ToString());
-            }
-            
         }
 
         private void RenderDataTable(MySqlDataReader reader)
