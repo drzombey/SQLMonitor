@@ -24,6 +24,7 @@ namespace SQLConsole
         private string _connectionStringToServer;
         private List<string> _databases;
         private Dictionary<string, Query> _queryList;
+
         public MainWindow()
         {
             InitializeComponent();
@@ -52,10 +53,16 @@ namespace SQLConsole
         private void SetClickHandler(bool connectionState = false)
         {
             btnRun.Click += OnRunClick;
-            btnConnect.Click += OnConnectClick;
+            btnRefresh.Click += OnRefreshDatabasesClick;
             if (connectionState)
             {
+                btnConnect.Click -= OnConnectClick;
                 btnConnect.Click += OnDisconnectClick;
+            }
+            else
+            {
+                btnConnect.Click += OnConnectClick;
+                btnConnect.Click -= OnDisconnectClick;
             }
         }
 
@@ -69,13 +76,12 @@ namespace SQLConsole
             _connectionStringToServer = $"Server={_hostname};Port={_port};Uid='{_username}';Password='{_password}';";
             _queryList = new Dictionary<string, Query>();
 
+            var query = new Query(_connectionStringToServer);
+            _queryList.Add("globalQuery", query);
 
-            var query = new Query();
-            
             try
             {
-                _queryList.Add("serverQuery", query);
-                var state = !query.Connect(_connectionStringToServer);
+                var state = !query.GetConnectionState();
 
                 btnConnect.Content = "Disconnect";
                 btnRun.IsEnabled = !state;
@@ -87,7 +93,7 @@ namespace SQLConsole
             }
             catch (Exception exception)
             {
-                _queryList.Remove("serverQuery");
+                _queryList.Remove("globalQuery");
                 Console.WriteLine(exception);
                 throw;
             }
@@ -112,25 +118,35 @@ namespace SQLConsole
         {
             try
             {
-                using (var query = new Query())
+                DatabaseItem db = (DatabaseItem)tvDatabases.SelectedItem;
+
+                if (db == null)
                 {
-                    DatabaseItem db = (DatabaseItem)tvDatabases.SelectedItem;
-                    if (db == null)
-                    {
-                        WriteLog("Please select a database!");
-                        return;
-                    }
-                    query.Connect(_connectionStringToServer + $"Database={db.DatabaseName}");
-                    query.Add(new TextRange(rtSqlEditor.Document.ContentStart, rtSqlEditor.Document.ContentEnd).Text);
-                    var reader = query.Open();
-                    RenderDataTable(reader);
+                    WriteLog("Please select a database!");
+                    return;
                 }
+
+                var query = new Query(_connectionStringToServer + $"Database={db.DatabaseName}");
+
+                query.SQL.Add(new TextRange(rtSqlEditor.Document.ContentStart, rtSqlEditor.Document.ContentEnd).Text);
+                var reader = query.Open();
+                
+                RenderDataTable(reader);
+                reader.Close();
             }
             catch (MySqlException exception)
             {
                 WriteLog(exception.ToString());
             }
 
+        }
+
+        private void OnRefreshDatabasesClick(object sender, RoutedEventArgs e)
+        {
+            ClearTreeView();
+
+            var query = _queryList["globalQuery"];
+            ReadDatabases(query);
         }
 
         #endregion
@@ -148,9 +164,6 @@ namespace SQLConsole
                     {
                         DatabaseName = reader.GetString("database"),
                     });
-                var query = new Query();
-                query.Connect(_connectionStringToServer + $"Database={datatbasename}");
-                _queryList.Add(datatbasename, query);
             }
         }
 
@@ -181,9 +194,10 @@ namespace SQLConsole
         {
             try
             {
-                query.Add("SHOW DATABASES;");
+                query.SQL.Add("SHOW DATABASES;");
                 var reader = query.Open();
                 AddDatabasesToTreeView(reader);
+                reader.Close();
             }
             catch (MySqlException exception)
             {

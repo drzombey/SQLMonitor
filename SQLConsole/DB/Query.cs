@@ -6,31 +6,38 @@ namespace SQLConsole.DB
 {
     class Query : IDisposable
     {
-        public string SQL { get; set; }
+        public Sql SQL { get; set; }
+        public string ConnectionString { get; set; }
         private readonly MySqlConnection _connection;
+        private MySqlCommand _command;
 
-        public Query()
+        public Query(string connectionString)
         {
-            _connection = new MySqlConnection();
+            ConnectionString = connectionString;
+
+            SQL = new Sql();
+
+            _connection = new MySqlConnection
+            {
+                ConnectionString = connectionString
+            };
+
+            _command = new MySqlCommand();
+            _command.Connection = _connection;
+
+            _connection.Open();
         }
+
         ~ Query()
         {
             Dispose(false);
         }
 
-        public void Add(string query)
-        {
-            SQL += query;
-        }
-        public void Clear()
-        {
-            SQL = "";
-        }
-        public bool Connect(string connectionString)
+        private bool Connect()
         {
             try
             {
-                _connection.ConnectionString = connectionString;
+                _connection.ConnectionString = ConnectionString;
                 _connection.Open();
                 return _connection.Ping();
             }
@@ -39,8 +46,13 @@ namespace SQLConsole.DB
                 Console.WriteLine(e);
                 throw;
             }
-
         }
+
+        public bool GetConnectionState()
+        {
+            return _connection.Ping();
+        }
+
         public void Disconnect()
         {
             try
@@ -55,14 +67,15 @@ namespace SQLConsole.DB
         }
         public int ExecSql()
         {
+            if (!_connection.Ping())
+            {
+                Connect();
+            }
+
             try
             {
-                var cmd = new MySqlCommand
-                {
-                    CommandText = SQL,
-                    Connection = _connection
-                };
-                return cmd.ExecuteNonQuery();
+                _command.CommandText = SQL.GetSQL();
+                return _command.ExecuteNonQuery();
             }
             catch (MySqlException e)
             {
@@ -72,15 +85,15 @@ namespace SQLConsole.DB
         }
         public MySqlDataReader Open()
         {
+            if (!_connection.Ping())
+            {
+                Connect();
+            }
+
             try
             {
-                var cmd = new MySqlCommand
-                {
-                    CommandText = SQL,
-                    Connection = _connection
-                };
-                var reader = cmd.ExecuteReader();
-                return reader;
+                _command.CommandText = SQL.GetSQL();
+                return _command.ExecuteReader();
             }
             catch (MySqlException e)
             {
@@ -88,7 +101,7 @@ namespace SQLConsole.DB
                 throw;
             }
         }
-
+        
         private void ReleaseUnmanagedResources()
         {
             // TODO release unmanaged resources here

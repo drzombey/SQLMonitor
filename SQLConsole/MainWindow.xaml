@@ -18,7 +18,10 @@
                     <Label DockPanel.Dock="Top">Password</Label>
                     <PasswordBox Name="pbPassword" TabIndex="3" DockPanel.Dock="Top" Width="200" Margin="10,0,10,0"></PasswordBox>
                     <Button Name="btnConnect" DockPanel.Dock="Top" TabIndex="4" Margin="10,10,10,0">Connect</Button>
-                    <TreeView Name="tvDatabases" DockPanel.Dock="Top" Margin="10">
+                    <Button Name="btnRefresh"  Width="20" Height="20" DockPanel.Dock="Top" Margin="10,10,10,0"  HorizontalAlignment="Left">
+                        <Image Source="img\refresh.png" HorizontalAlignment="Center"></Image>
+                    </Button>
+                <TreeView Name="tvDatabases" DockPanel.Dock="Top" Margin="10">
                         <TreeView.Resources>
                             <HierarchicalDataTemplate DataType="{x:Type self:DatabaseItem}" >
                                 <StackPanel Orientation="Horizontal">
