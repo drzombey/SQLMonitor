@@ -69,11 +69,14 @@ namespace SQLConsole
         private void OnDisconnectClick(object sender, RoutedEventArgs e)
         {
             ClearTreeView();
+            
             foreach (var pair in _queryList)
             {
                 pair.Value.Disconnect();
             }
+
             btnConnect.Content = "Connect";
+            btnRun.IsEnabled = false;
             SetClickHandler();
         }
 
@@ -104,20 +107,6 @@ namespace SQLConsole
 
         #endregion
 
-        private void ReadDatabases(Query query)
-        {
-            try
-            {
-                query.Add("SHOW DATABASES;");
-                var reader = query.Open();
-                AddDatabasesToTreeView(reader);
-            }
-            catch (MySqlException exception)
-            {
-                WriteLog(exception.ToString());
-            }
-        }
-
         #region TreeView
 
         private void AddDatabasesToTreeView(MySqlDataReader reader)
@@ -144,6 +133,8 @@ namespace SQLConsole
 
         #endregion
 
+        #region DataView
+
         private void RenderDataTable(MySqlDataReader reader)
         {
             try
@@ -158,10 +149,27 @@ namespace SQLConsole
             }
         }
 
+        private void ReadDatabases(Query query)
+        {
+            try
+            {
+                query.Add("SHOW DATABASES;");
+                var reader = query.Open();
+                AddDatabasesToTreeView(reader);
+            }
+            catch (MySqlException exception)
+            {
+                WriteLog(exception.ToString());
+            }
+        }
+
         private void WriteLog(string log)
         {
             rtConsoleLog.Document.Blocks.Clear();
             rtConsoleLog.Document.Blocks.Add(new Paragraph(new Run(log)));
         }
+
+        #endregion
+
     }
 }
