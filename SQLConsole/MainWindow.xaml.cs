@@ -35,6 +35,18 @@ namespace SQLConsole
             SetClickHandler();
         }
 
+        #region StateHandling
+
+        private void SetLoginTextBoxStates(bool state)
+        {
+            pbPassword.IsEnabled = state;
+            tbHostname.IsEnabled = state;
+            tbUsername.IsEnabled = state;
+            tbPort.IsEnabled = state;
+        }
+
+        #endregion
+
         #region ClickHandling
 
         private void SetClickHandler(bool connectionState = false)
@@ -53,17 +65,32 @@ namespace SQLConsole
             _port = tbPort.Text;
             _username = tbUsername.Text;
             _password = pbPassword.Password;
+
             _connectionStringToServer = $"Server={_hostname};Port={_port};Uid='{_username}';Password='{_password}';";
             _queryList = new Dictionary<string, Query>();
 
+
             var query = new Query();
-            _queryList.Add("serverQuery", query);
-            var state = !query.Connect(_connectionStringToServer);
-            btnConnect.Content = "Disconnect";
-            SetClickHandler(!state);
-            btnRun.IsEnabled = !state;
-            ReadDatabases(query);
             
+            try
+            {
+                _queryList.Add("serverQuery", query);
+                var state = !query.Connect(_connectionStringToServer);
+
+                btnConnect.Content = "Disconnect";
+                btnRun.IsEnabled = !state;
+
+                SetClickHandler(!state);
+                SetLoginTextBoxStates(state);
+
+                ReadDatabases(query);
+            }
+            catch (Exception exception)
+            {
+                _queryList.Remove("serverQuery");
+                Console.WriteLine(exception);
+                throw;
+            }
         }
 
         private void OnDisconnectClick(object sender, RoutedEventArgs e)
@@ -78,6 +105,7 @@ namespace SQLConsole
             btnConnect.Content = "Connect";
             btnRun.IsEnabled = false;
             SetClickHandler();
+            SetLoginTextBoxStates(true);
         }
 
         private void OnRunClick(object sender, RoutedEventArgs e)
