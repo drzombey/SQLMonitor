@@ -20,7 +20,7 @@ namespace SQLConsole
     /// </summary>
     public partial class MainWindow : Window
     {
-        private string hostname, port, username, password;
+        private string _hostname, _port, _username, _password;
         private string _connectionstring;
         private List<string> _databases;
         public MainWindow()
@@ -48,11 +48,11 @@ namespace SQLConsole
 
         private void OnConnectClick(object sender, RoutedEventArgs e)
         {
-            hostname = tbHostname.Text;
-            port = tbPort.Text;
-            username = tbUsername.Text;
-            password = pbPassword.Password;
-            _connectionstring = $"Server={hostname};Port={port};Uid='{username}';Password='{password}';";
+            _hostname = tbHostname.Text;
+            _port = tbPort.Text;
+            _username = tbUsername.Text;
+            _password = pbPassword.Password;
+            _connectionstring = $"Server={_hostname};Port={_port};Uid='{_username}';Password='{_password}';";
             using (var query = new Query())
             {
                 var state = !query.Connect(_connectionstring);
