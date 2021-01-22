@@ -31,14 +31,19 @@ namespace SQLConsole
             tbHostname.Text = "localhost";
             tbPort.Text = "3306";
             tbUsername.Text = "root";
+            SetClickHandler();
         }
 
         #region ClickHandling
 
-        private void SetClickHandler()
+        private void SetClickHandler(bool connectionState = false)
         {
             btnRun.Click += OnRunClick;
             btnConnect.Click += OnConnectClick;
+            if (connectionState)
+            {
+                btnConnect.Click += OnDisconnectClick;
+            }
         }
 
         private void OnConnectClick(object sender, RoutedEventArgs e)
@@ -55,6 +60,11 @@ namespace SQLConsole
                 btnRun.IsEnabled = !state;
                 ReadDatabases(query);
             }
+        }
+
+        private void OnDisconnectClick(object sender, RoutedEventArgs e)
+        {
+            //TODO Disconnect routine
         }
 
         private void OnRunClick(object sender, RoutedEventArgs e)
