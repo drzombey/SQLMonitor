@@ -22,7 +22,6 @@ namespace SQLConsole
     {
         private string _hostname, _port, _username, _password;
         private string _connectionStringToServer;
-        private string _connectionStringToDb;
         private List<string> _databases;
         private Dictionary<string, Query> _queryList;
         public MainWindow()
@@ -60,7 +59,8 @@ namespace SQLConsole
             var query = new Query();
             _queryList.Add("serverQuery", query);
             var state = !query.Connect(_connectionStringToServer);
-            btnConnect.IsEnabled = state;
+            btnConnect.Content = "Disconnect";
+            SetClickHandler(!state);
             btnRun.IsEnabled = !state;
             ReadDatabases(query);
             
@@ -68,7 +68,13 @@ namespace SQLConsole
 
         private void OnDisconnectClick(object sender, RoutedEventArgs e)
         {
-            //TODO Disconnect routine
+            ClearTreeView();
+            foreach (var pair in _queryList)
+            {
+                pair.Value.Disconnect();
+            }
+            btnConnect.Content = "Connect";
+            SetClickHandler();
         }
 
         private void OnRunClick(object sender, RoutedEventArgs e)
@@ -98,15 +104,12 @@ namespace SQLConsole
 
         #endregion
 
-
-
         private void ReadDatabases(Query query)
         {
             try
             {
                 query.Add("SHOW DATABASES;");
                 var reader = query.Open();
-                //RenderDataTable(reader);
                 AddDatabasesToTreeView(reader);
             }
             catch (MySqlException exception)
@@ -115,11 +118,14 @@ namespace SQLConsole
             }
         }
 
+        #region TreeView
+
         private void AddDatabasesToTreeView(MySqlDataReader reader)
         {
+            ClearTreeView();
             while (reader.Read())
             {
-               var datatbasename = reader.GetString("database");
+                var datatbasename = reader.GetString("database");
                 tvDatabases.Items.Add(
                     new DatabaseItem()
                     {
@@ -130,6 +136,13 @@ namespace SQLConsole
                 _queryList.Add(datatbasename, query);
             }
         }
+
+        private void ClearTreeView()
+        {
+            tvDatabases.Items.Clear();
+        }
+
+        #endregion
 
         private void RenderDataTable(MySqlDataReader reader)
         {
