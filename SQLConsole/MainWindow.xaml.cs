@@ -21,8 +21,10 @@ namespace SQLConsole
     public partial class MainWindow : Window
     {
         private string _hostname, _port, _username, _password;
-        private string _connectionstring;
+        private string _connectionStringToServer;
+        private string _connectionStringToDb;
         private List<string> _databases;
+        private Dictionary<string, Query> _queryList;
         public MainWindow()
         {
             InitializeComponent();
@@ -52,14 +54,16 @@ namespace SQLConsole
             _port = tbPort.Text;
             _username = tbUsername.Text;
             _password = pbPassword.Password;
-            _connectionstring = $"Server={_hostname};Port={_port};Uid='{_username}';Password='{_password}';";
-            using (var query = new Query())
-            {
-                var state = !query.Connect(_connectionstring);
-                btnConnect.IsEnabled = state;
-                btnRun.IsEnabled = !state;
-                ReadDatabases(query);
-            }
+            _connectionStringToServer = $"Server={_hostname};Port={_port};Uid='{_username}';Password='{_password}';";
+            _queryList = new Dictionary<string, Query>();
+
+            var query = new Query();
+            _queryList.Add("serverQuery", query);
+            var state = !query.Connect(_connectionStringToServer);
+            btnConnect.IsEnabled = state;
+            btnRun.IsEnabled = !state;
+            ReadDatabases(query);
+            
         }
 
         private void OnDisconnectClick(object sender, RoutedEventArgs e)
@@ -79,7 +83,7 @@ namespace SQLConsole
                         WriteLog("Please select a database!");
                         return;
                     }
-                    query.Connect(_connectionstring + $"Database={db.DatabaseName}");
+                    query.Connect(_connectionStringToServer + $"Database={db.DatabaseName}");
                     query.Add(new TextRange(rtSqlEditor.Document.ContentStart, rtSqlEditor.Document.ContentEnd).Text);
                     var reader = query.Open();
                     RenderDataTable(reader);
@@ -121,12 +125,9 @@ namespace SQLConsole
                     {
                         DatabaseName = reader.GetString("database"),
                     });
-
-                using (var query = new Query())
-                {
-                    query.Connect(_connectionstring + $"Database={datatbasename}");
-
-                }
+                var query = new Query();
+                query.Connect(_connectionStringToServer + $"Database={datatbasename}");
+                _queryList.Add(datatbasename, query);
             }
         }
 
