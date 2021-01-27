@@ -10,6 +10,7 @@ namespace SQLConsole.DB
         public Sql SQL { get; set; }
         public string ConnectionString { get; set; }
         private readonly MySqlConnection _connection;
+        private MySqlDataReader _reader;
         private MySqlCommand _command;
 
         public Query(string connectionString)
@@ -94,7 +95,8 @@ namespace SQLConsole.DB
             try
             {
                 _command.CommandText = SQL.GetSQL();
-                return _command.ExecuteReader();
+                _reader = _command.ExecuteReader();
+                return _reader;
             }
             catch (MySqlException e)
             {
@@ -103,9 +105,21 @@ namespace SQLConsole.DB
             }
         }
 
+        public void Close()
+        {
+            if (_reader != null)
+            {
+                if (_reader.IsClosed)
+                {
+                    return;
+                }
+
+                _reader.Close();
+            }
+        }
+
         public bool IsOperationalSqlStatement()
         {
-            var result = false;
             var sql = SQL.GetSQL();
 
             List<string> statementTypes = new List<string>()
@@ -115,14 +129,14 @@ namespace SQLConsole.DB
 
             foreach (var statementType in statementTypes)
             {
-                result = sql.ToLower().StartsWith(statementType.ToLower());
+                var result = sql.ToLower().StartsWith(statementType.ToLower());
                 if (result)
                 {
-                    return result;
+                    return true;
                 }
             }
 
-            return result;
+            return false;
         }
 
         private void ReleaseUnmanagedResources()

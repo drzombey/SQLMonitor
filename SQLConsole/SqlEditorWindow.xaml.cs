@@ -17,9 +17,11 @@ namespace SQLConsole
     /// </summary>
     public partial class SqlEditor : Window
     {
-        public SqlEditor()
+        private readonly string _databaseName;
+        public SqlEditor(string databaseName)
         {
             InitializeComponent();
+            _databaseName = databaseName;
         }
     }
 }

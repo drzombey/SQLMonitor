@@ -9,6 +9,8 @@ using System.Windows.Controls;
 using System.Windows.Data;
 using System.Windows.Documents;
 using System.Data;
+using System.Windows.Input;
+using Microsoft.VisualBasic.CompilerServices;
 using MySql.Data.MySqlClient;
 using SQLConsole.DB;
 
@@ -20,19 +22,19 @@ namespace SQLConsole
     /// </summary>
     public partial class MainWindow : Window
     {
-        private string _hostname, _port, _username, _password;
-        private string _connectionStringToServer;
-        private List<string> _databases;
-        private Dictionary<string, Query> _queryList;
+        private Query _globalQuery;
 
         public MainWindow()
         {
             InitializeComponent();
-            _databases = new List<string>();
             btnRun.IsEnabled = false;
-            tbHostname.Text = "localhost";
-            tbPort.Text = "3306";
-            tbUsername.Text = "root";
+
+            var connectionObject = ConnectionDataObject.Instance;
+            
+            tbHostname.Text = connectionObject.Hostname;
+            tbPort.Text = connectionObject.Port.ToString();
+            tbUsername.Text = connectionObject.Username;
+
             btnRun.Click += OnRunClick;
             btnRefresh.Click += OnRefreshDatabasesClick;
             SetClickHandler();
@@ -68,20 +70,18 @@ namespace SQLConsole
 
         private void OnConnectClick(object sender, RoutedEventArgs e)
         {
-            _hostname = tbHostname.Text;
-            _port = tbPort.Text;
-            _username = tbUsername.Text;
-            _password = pbPassword.Password;
+            var connectionObject = ConnectionDataObject.Instance;
 
-            _connectionStringToServer = $"Server={_hostname};Port={_port};Uid='{_username}';Password='{_password}';";
-            _queryList = new Dictionary<string, Query>();
+            connectionObject.Hostname = tbHostname.Text;
+            connectionObject.Port = int.Parse(tbPort.Text);
+            connectionObject.Username = tbUsername.Text;
+            connectionObject.Password = pbPassword.Password;
 
-            var query = new Query(_connectionStringToServer);
-            _queryList.Add("globalQuery", query);
+            _globalQuery = new Query(connectionObject.ConnectionStringToServer);
 
             try
             {
-                var state = !query.GetConnectionState();
+                var state = !_globalQuery.GetConnectionState();
 
                 btnConnect.Content = "Disconnect";
                 btnRun.IsEnabled = !state;
@@ -89,11 +89,10 @@ namespace SQLConsole
                 SetClickHandler(!state);
                 SetLoginTextBoxStates(state);
 
-                ReadDatabases(query);
+                ReadAndAddDatabasesWithTablesToTreeView();
             }
             catch (Exception exception)
             {
-                _queryList.Remove("globalQuery");
                 Console.WriteLine(exception);
                 throw;
             }
@@ -102,14 +101,10 @@ namespace SQLConsole
         private void OnDisconnectClick(object sender, RoutedEventArgs e)
         {
             ClearTreeView();
-            
-            foreach (var pair in _queryList)
-            {
-                pair.Value.Disconnect();
-            }
 
             btnConnect.Content = "Connect";
             btnRun.IsEnabled = false;
+
             SetClickHandler();
             SetLoginTextBoxStates(true);
         }
@@ -126,7 +121,7 @@ namespace SQLConsole
                     return;
                 }
 
-                var query = new Query(_connectionStringToServer + $"Database={db.DatabaseName}");
+                var query = new Query(ConnectionDataObject.Instance.ConnectionStringToServer + $"Database={db.DatabaseName}");
                 query.SQL.Add(new TextRange(rtSqlEditor.Document.ContentStart, rtSqlEditor.Document.ContentEnd).Text);
 
                 if (query.IsOperationalSqlStatement())
@@ -136,10 +131,8 @@ namespace SQLConsole
                     return;
                 }
 
-                var reader = query.Open();
-                
-                RenderDataTable(reader);
-                reader.Close();
+                RenderDataTable(query.Open());
+                query.Close();
             }
             catch (MySqlException exception)
             {
@@ -151,51 +144,66 @@ namespace SQLConsole
         private void OnRefreshDatabasesClick(object sender, RoutedEventArgs e)
         {
             ClearTreeView();
-
-            var query = _queryList["globalQuery"];
-            ReadDatabases(query);
-        }
-
-        private void TvDatabases_OnSelectedItemChanged(object sender, RoutedPropertyChangedEventArgs<object> e)
-        {
-            //TODO
+            ReadAndAddDatabasesWithTablesToTreeView();
         }
 
         #endregion
 
         #region TreeView
 
-        private void AddDatabasesToTreeView(MySqlDataReader reader)
+        private void ReadAndAddDatabasesWithTablesToTreeView()
         {
             ClearTreeView();
+            _globalQuery.SQL.Clear();
+            _globalQuery.SQL.Add("SHOW DATABASES;");
+            
+            var reader = _globalQuery.Open();
+
             while (reader.Read())
             {
-                var datatbasename = reader.GetString("database");
-                var query = new Query(_connectionStringToServer);
-                
-                query.SQL.Clear();
-                query.SQL.Add($"USE {datatbasename}; SHOW TABLES;");
-                var tableReader = query.Open();
-                var tableList = new ObservableCollection<TableItem>();
-
-                while (tableReader.Read())
-                {
-                    var table = tableReader.GetString($"Tables_in_{datatbasename}");
-                    tableList.Add(new TableItem()
-                    {
-                        TableName = table
-                    });
-                }
-                tableReader.Close();
-
-                query.Disconnect();
+                var database = reader.GetString("database");
 
                 tvDatabases.Items.Add(
                     new DatabaseItem()
                     {
                         DatabaseName = reader.GetString("database"),
-                        Tables = tableList
+                        Tables = ReadTablesFromDatabase(database)
                     });
+            }
+
+            _globalQuery.Close();
+        }
+
+        private ObservableCollection<TableItem> ReadTablesFromDatabase(string database)
+        {
+            var query = new Query(ConnectionDataObject.Instance.ConnectionStringToServer);
+
+            try
+            {
+                query.SQL.Clear();
+                query.SQL.Add($"USE {database}; SHOW TABLES;");
+
+                var tableReader = query.Open();
+                var tableList = new ObservableCollection<TableItem>();
+
+                while (tableReader.Read())
+                {
+                    var table = tableReader.GetString($"Tables_in_{database}");
+                    tableList.Add(new TableItem()
+                    {
+                        TableName = table
+                    });
+                }
+
+                query.Close();
+                query.Disconnect();
+
+                return tableList;
+            }
+            catch (MySqlException exception)
+            {
+                WriteLog(exception.ToString());
+                throw;
             }
         }
 
@@ -222,22 +230,6 @@ namespace SQLConsole
             }
         }
 
-        private void ReadDatabases(Query query)
-        {
-            try
-            {
-                query.SQL.Clear();
-                query.SQL.Add("SHOW DATABASES;");
-                var reader = query.Open();
-                AddDatabasesToTreeView(reader);
-                reader.Close();
-            }
-            catch (MySqlException exception)
-            {
-                WriteLog(exception.ToString());
-            }
-        }
-
         private void WriteLog(string log)
         {
             rtConsoleLog.Document.Blocks.Clear();
@@ -249,5 +241,22 @@ namespace SQLConsole
         #region LogicalFunctions
 
         #endregion
+
+        private void TvDatabases_OnMouseDoubleClick(object sender, MouseButtonEventArgs e)
+        {
+            if (tvDatabases.Items.Count == 0)
+            {
+                return;
+            }
+
+            var item = tvDatabases.SelectedItem;
+
+            if (item.GetType() == typeof(DatabaseItem))
+            {
+                var databaseItem = (DatabaseItem) item;
+                var sqlEditorWindow = new SqlEditor(databaseItem.DatabaseName);
+                sqlEditorWindow.Show();
+            }
+        }
     }
 }

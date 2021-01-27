@@ -22,7 +22,7 @@
                         <Image Source="img\refresh.png" HorizontalAlignment="Center"></Image>
                     </Button>
 
-                    <TreeView Name="tvDatabases" DockPanel.Dock="Top" Margin="10" SelectedItemChanged="TvDatabases_OnSelectedItemChanged">
+                    <TreeView Name="tvDatabases" DockPanel.Dock="Top" Margin="10" MouseDoubleClick="TvDatabases_OnMouseDoubleClick">
                         <TreeView.Resources>
                             <HierarchicalDataTemplate DataType="{x:Type self:DatabaseItem}" ItemsSource="{Binding Tables}">
                                 <StackPanel Orientation="Horizontal">
