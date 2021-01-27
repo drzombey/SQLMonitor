@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Data;
 using MySql.Data.MySqlClient;
 
@@ -101,7 +102,29 @@ namespace SQLConsole.DB
                 throw;
             }
         }
-        
+
+        public bool IsOperationalSqlStatement()
+        {
+            var result = false;
+            var sql = SQL.GetSQL();
+
+            List<string> statementTypes = new List<string>()
+            {
+                "INSERT", "UPDATE", "DELETE"
+            };
+
+            foreach (var statementType in statementTypes)
+            {
+                result = sql.ToLower().StartsWith(statementType.ToLower());
+                if (result)
+                {
+                    return result;
+                }
+            }
+
+            return result;
+        }
+
         private void ReleaseUnmanagedResources()
         {
             // TODO release unmanaged resources here

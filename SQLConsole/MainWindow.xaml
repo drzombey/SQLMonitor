@@ -21,17 +21,18 @@
                     <Button Name="btnRefresh"  Width="20" Height="20" DockPanel.Dock="Top" Margin="10,10,10,0"  HorizontalAlignment="Left">
                         <Image Source="img\refresh.png" HorizontalAlignment="Center"></Image>
                     </Button>
-                <TreeView Name="tvDatabases" DockPanel.Dock="Top" Margin="10">
+
+                    <TreeView Name="tvDatabases" DockPanel.Dock="Top" Margin="10" SelectedItemChanged="TvDatabases_OnSelectedItemChanged">
                         <TreeView.Resources>
-                            <HierarchicalDataTemplate DataType="{x:Type self:DatabaseItem}" >
+                            <HierarchicalDataTemplate DataType="{x:Type self:DatabaseItem}" ItemsSource="{Binding Tables}">
                                 <StackPanel Orientation="Horizontal">
-                                    <Image Source="/img/database.png" Margin="0,0,5,0" />
+                                    <Image Source="/img/database.png" Height="18" Width="18" Margin="0,0,5,0" />
                                     <TextBlock Text="{Binding DatabaseName}" />
                                 </StackPanel>
                             </HierarchicalDataTemplate>
                             <DataTemplate DataType="{x:Type self:TableItem}">
                                 <StackPanel Orientation="Horizontal">
-                                    <Image Source="img/table.png" Margin="0,0,5,0"/>
+                                    <Image Source="img/table.png" Height="18" Width="18" Margin="0,0,5,0"/>
                                     <TextBlock Text="{Binding TableName}" />
                                 </StackPanel>
                             </DataTemplate>

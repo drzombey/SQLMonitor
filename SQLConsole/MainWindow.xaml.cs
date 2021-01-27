@@ -33,6 +33,8 @@ namespace SQLConsole
             tbHostname.Text = "localhost";
             tbPort.Text = "3306";
             tbUsername.Text = "root";
+            btnRun.Click += OnRunClick;
+            btnRefresh.Click += OnRefreshDatabasesClick;
             SetClickHandler();
         }
 
@@ -52,8 +54,6 @@ namespace SQLConsole
 
         private void SetClickHandler(bool connectionState = false)
         {
-            btnRun.Click += OnRunClick;
-            btnRefresh.Click += OnRefreshDatabasesClick;
             if (connectionState)
             {
                 btnConnect.Click -= OnConnectClick;
@@ -122,13 +122,20 @@ namespace SQLConsole
 
                 if (db == null)
                 {
-                    WriteLog("Please select a database!");
+                    WriteLog("Bitte wählen Sie eine Datenbak aus!");
                     return;
                 }
 
                 var query = new Query(_connectionStringToServer + $"Database={db.DatabaseName}");
-
                 query.SQL.Add(new TextRange(rtSqlEditor.Document.ContentStart, rtSqlEditor.Document.ContentEnd).Text);
+
+                if (query.IsOperationalSqlStatement())
+                {
+                    var rowCount = query.ExecSql();
+                    WriteLog($"{rowCount} rows updated!");
+                    return;
+                }
+
                 var reader = query.Open();
                 
                 RenderDataTable(reader);
@@ -149,6 +156,11 @@ namespace SQLConsole
             ReadDatabases(query);
         }
 
+        private void TvDatabases_OnSelectedItemChanged(object sender, RoutedPropertyChangedEventArgs<object> e)
+        {
+            //TODO
+        }
+
         #endregion
 
         #region TreeView
@@ -159,10 +171,30 @@ namespace SQLConsole
             while (reader.Read())
             {
                 var datatbasename = reader.GetString("database");
+                var query = new Query(_connectionStringToServer);
+                
+                query.SQL.Clear();
+                query.SQL.Add($"USE {datatbasename}; SHOW TABLES;");
+                var tableReader = query.Open();
+                var tableList = new ObservableCollection<TableItem>();
+
+                while (tableReader.Read())
+                {
+                    var table = tableReader.GetString($"Tables_in_{datatbasename}");
+                    tableList.Add(new TableItem()
+                    {
+                        TableName = table
+                    });
+                }
+                tableReader.Close();
+
+                query.Disconnect();
+
                 tvDatabases.Items.Add(
                     new DatabaseItem()
                     {
                         DatabaseName = reader.GetString("database"),
+                        Tables = tableList
                     });
             }
         }
@@ -194,6 +226,7 @@ namespace SQLConsole
         {
             try
             {
+                query.SQL.Clear();
                 query.SQL.Add("SHOW DATABASES;");
                 var reader = query.Open();
                 AddDatabasesToTreeView(reader);
@@ -213,5 +246,8 @@ namespace SQLConsole
 
         #endregion
 
+        #region LogicalFunctions
+
+        #endregion
     }
 }

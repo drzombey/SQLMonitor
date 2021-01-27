@@ -1,0 +1,19 @@
+﻿<Window x:Class="SQLConsole.SqlEditor"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:local="clr-namespace:SQLConsole"
+        mc:Ignorable="d"
+        Title="SqlEditor" Height="450" Width="800">
+    <Grid>
+        <DockPanel Margin="0,10,10,10" DockPanel.Dock="Left">
+            <Button Name="btnRun"  Width="50" Height="30" DockPanel.Dock="Top" Margin="0,5,5,5"  HorizontalAlignment="Left">
+                <Image Source="img\play_icon.png" HorizontalAlignment="Center"></Image>
+            </Button>
+            <RichTextBox Name="rtSqlEditor" DockPanel.Dock="Top" Height="400" Margin="0,0,0,5"></RichTextBox>
+            <DataGrid Name="dgTable" DockPanel.Dock="Top" Height="300" ></DataGrid>
+            <RichTextBox Name="rtConsoleLog" DockPanel.Dock="Top" Height="200" Margin="0,0,0,5" IsReadOnly="True"></RichTextBox>
+        </DockPanel>
+    </Grid>
+</Window>
