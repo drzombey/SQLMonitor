@@ -10,6 +10,7 @@ using System.Windows.Data;
 using System.Windows.Documents;
 using System.Data;
 using System.Windows.Input;
+using System.Windows.Media;
 using Microsoft.VisualBasic.CompilerServices;
 using MySql.Data.MySqlClient;
 using SQLConsole.DB;
@@ -27,7 +28,6 @@ namespace SQLConsole
         public MainWindow()
         {
             InitializeComponent();
-            btnRun.IsEnabled = false;
 
             var connectionObject = ConnectionDataObject.Instance;
             
@@ -35,7 +35,6 @@ namespace SQLConsole
             tbPort.Text = connectionObject.Port.ToString();
             tbUsername.Text = connectionObject.Username;
 
-            btnRun.Click += OnRunClick;
             btnRefresh.Click += OnRefreshDatabasesClick;
             SetClickHandler();
         }
@@ -84,7 +83,6 @@ namespace SQLConsole
                 var state = !_globalQuery.GetConnectionState();
 
                 btnConnect.Content = "Disconnect";
-                btnRun.IsEnabled = !state;
 
                 SetClickHandler(!state);
                 SetLoginTextBoxStates(state);
@@ -103,42 +101,9 @@ namespace SQLConsole
             ClearTreeView();
 
             btnConnect.Content = "Connect";
-            btnRun.IsEnabled = false;
 
             SetClickHandler();
             SetLoginTextBoxStates(true);
-        }
-
-        private void OnRunClick(object sender, RoutedEventArgs e)
-        {
-            try
-            {
-                DatabaseItem db = (DatabaseItem)tvDatabases.SelectedItem;
-
-                if (db == null)
-                {
-                    WriteLog("Bitte wählen Sie eine Datenbak aus!");
-                    return;
-                }
-
-                var query = new Query(ConnectionDataObject.Instance.ConnectionStringToServer + $"Database={db.DatabaseName}");
-                query.SQL.Add(new TextRange(rtSqlEditor.Document.ContentStart, rtSqlEditor.Document.ContentEnd).Text);
-
-                if (query.IsOperationalSqlStatement())
-                {
-                    var rowCount = query.ExecSql();
-                    WriteLog($"{rowCount} rows updated!");
-                    return;
-                }
-
-                RenderDataTable(query.Open());
-                query.Close();
-            }
-            catch (MySqlException exception)
-            {
-                WriteLog(exception.ToString());
-            }
-
         }
 
         private void OnRefreshDatabasesClick(object sender, RoutedEventArgs e)
@@ -202,7 +167,6 @@ namespace SQLConsole
             }
             catch (MySqlException exception)
             {
-                WriteLog(exception.ToString());
                 throw;
             }
         }
@@ -216,25 +180,6 @@ namespace SQLConsole
 
         #region DataView
 
-        private void RenderDataTable(MySqlDataReader reader)
-        {
-            try
-            {
-                DataTable dtTable = new DataTable();
-                dtTable.Load(reader);
-                dgTable.ItemsSource = dtTable.DefaultView;
-            }
-            catch (MySqlException exception)
-            {
-                WriteLog(exception.ToString());
-            }
-        }
-
-        private void WriteLog(string log)
-        {
-            rtConsoleLog.Document.Blocks.Clear();
-            rtConsoleLog.Document.Blocks.Add(new Paragraph(new Run(log)));
-        }
 
         #endregion
 
@@ -244,19 +189,40 @@ namespace SQLConsole
 
         private void TvDatabases_OnMouseDoubleClick(object sender, MouseButtonEventArgs e)
         {
-            if (tvDatabases.Items.Count == 0)
+            var item = tvDatabases.SelectedItem;
+            if (tvDatabases.Items.Count == 0 || item == null)
             {
                 return;
             }
 
-            var item = tvDatabases.SelectedItem;
-
             if (item.GetType() == typeof(DatabaseItem))
             {
                 var databaseItem = (DatabaseItem) item;
-                var sqlEditorWindow = new SqlEditor(databaseItem.DatabaseName);
-                sqlEditorWindow.Show();
+                OpenNewEditorFrame(databaseItem.DatabaseName);
             }
+        }
+
+        private void OpenNewEditorFrame(string database)
+        {
+            var sqlEditorPage = new SqlEditorPage(database)
+            {
+                ShowsNavigationUI = false
+            };
+
+            var frame = new Frame()
+            {
+                BorderThickness = new Thickness(0.5),
+                BorderBrush = Brushes.LightGray,
+                Content = sqlEditorPage
+            };
+
+            var tabItem = new TabItem()
+            {
+                Content = frame,
+                Header = $"DB: {database}"
+            };
+
+            tabControl.Items.Add(tabItem);
         }
     }
 }

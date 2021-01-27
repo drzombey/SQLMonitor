@@ -5,7 +5,7 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:self="clr-namespace:SQLConsole"
         mc:Ignorable="d"
-        Title="MainWindow" Height="1024" Width="800">
+        Title="Meine coole SQL Konsole" Height="1024" Width="800">
     <Grid>
         <DockPanel DockPanel.Dock="Top">
                 <DockPanel DockPanel.Dock="Left">
@@ -41,12 +41,9 @@
                 </DockPanel>
 
                 <DockPanel Margin="0,10,10,10" DockPanel.Dock="Left">
-                    <Button Name="btnRun"  Width="50" Height="30" DockPanel.Dock="Top" Margin="0,5,5,5"  HorizontalAlignment="Left">
-                        <Image Source="img\play_icon.png" HorizontalAlignment="Center"></Image>
-                    </Button>
-                    <RichTextBox Name="rtSqlEditor" DockPanel.Dock="Top" Height="400" Margin="0,0,0,5"></RichTextBox>
-                    <DataGrid Name="dgTable" DockPanel.Dock="Top" Height="300" ></DataGrid>
-                    <RichTextBox Name="rtConsoleLog" DockPanel.Dock="Top" Height="200" Margin="0,0,0,5" IsReadOnly="True"></RichTextBox>
+                    <TabControl Name="tabControl">
+                        
+                    </TabControl>
                 </DockPanel>
             </DockPanel>
     </Grid>
