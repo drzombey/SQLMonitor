@@ -29,7 +29,11 @@ namespace SQLConsole
             InitializeComponent();
             _databaseName = databaseName;
             _globalQuery = new Query(ConnectionDataObject.Instance.ConnectionStringToServer + $"Database={_databaseName}");
-            tabItemEditor.Header += $": {databaseName}";
+        }
+
+        ~SqlEditorPage()
+        {
+            _globalQuery.Disconnect();
         }
 
         private void OnRunClick(object sender, RoutedEventArgs e)
