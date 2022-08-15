@@ -1,38 +1,31 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk.WindowsDesktop">
-
   <PropertyGroup>
     <OutputType>WinExe</OutputType>
-    <TargetFramework>netcoreapp3.1</TargetFramework>
+    <TargetFramework>net6.0-windows</TargetFramework>
     <UseWPF>true</UseWPF>
   </PropertyGroup>
-
   <ItemGroup>
     <Compile Remove="NewFolder1\**" />
     <EmbeddedResource Remove="NewFolder1\**" />
     <None Remove="NewFolder1\**" />
     <Page Remove="NewFolder1\**" />
   </ItemGroup>
-
   <ItemGroup>
     <None Remove="img\database.png" />
     <None Remove="img\play_icon.png" />
     <None Remove="img\refresh.png" />
     <None Remove="img\table.png" />
   </ItemGroup>
-
   <ItemGroup>
     <PackageReference Include="MySql.Data" Version="8.0.22" />
   </ItemGroup>
-
   <ItemGroup>
     <Resource Include="img\database.png" />
     <Resource Include="img\play_icon.png" />
     <Resource Include="img\refresh.png" />
     <Resource Include="img\table.png" />
   </ItemGroup>
-
   <ItemGroup>
     <Folder Include="Utils\" />
   </ItemGroup>
-
 </Project>
